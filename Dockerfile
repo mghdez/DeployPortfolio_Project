@@ -1,7 +1,13 @@
 FROM nginx:alpine
 
+# Install git
+RUN apk add --no-cache git
+
+# Set working directory
+WORKDIR /app
+
 # Clone the repository
-RUN git clone https://github.com/mghdez/DeployPortfolio_Project.git
+RUN git clone https://github.com/mghdez/DeployPortfolio_Project.git .
 
 # Set working directory
 WORKDIR /DeployPortfolio_Project

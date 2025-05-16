@@ -1,25 +1,39 @@
-# Personal Portfolio Design #08
-In this tutorial ([Open in Youtube](https://youtu.be/3Kc0NoAcqgI)), 🚀🚀 Get ready to showcase your skills and projects as we dive into the world of personal portfolio websites! In this tutorial, we'll guide you through the process of building a stunning and professional portfolio using HTML and CSS. Whether you're a coding newbie or a seasoned developer, there's something here for you!
+# Miguel Gil Hernandez – Personal Portfolio
 
-🎨🎨 We'll start by laying the foundation with HTML, building the structure for our portfolio. Then, we'll sprinkle some CSS magic to style it up, ensuring it looks modern and professional. 💻 From sleek buttons to stylish layouts, we'll cover it all!
+This my personal portfolio website. The site showcases professional experience, skills, and provides ways to contact or hire Me.
 
-What You'll Learn:
-- Setting up the basic structure of your HTML file
-- Styling your portfolio with CSS to achieve a modern look
-- Creating a responsive design that looks great on all devices
-- Adding a professional touch with custom fonts and colors
-- Implementing an interactive 'Hire me' button
+## Features
 
-Features of the Portfolio:
-- Header: A clean and simple navigation bar with links to About, Portfolio, and Contact sections.
-- Profile Section: A brief introduction with a professional profile picture and contact buttons.
-- Recent Works: A list of your recent projects with job titles, dates, and company names.
-- About My Work: A detailed description of your design philosophy and skills.
-- Skills Section: Highlight your key design skills and expertise.
-- Social Links: Easily accessible links to your GitHub, Instagram, and LinkedIn profiles.
+- **Responsive Design:** Modern, clean, and mobile-friendly layout using custom CSS.
+- **About Section:** Introduction and professional summary.
+- **Experience Timeline:** Highlights recent roles and companies.
+- **Skills & Offerings:** Describes DevOps, automation, and infrastructure expertise.
+- **Contact Options:** 
+  - "Hire me" button opens an email draft.
+  - "My Email" button copies the email address to clipboard.
+  - Downloadable resume.
+  - Social links to GitHub and LinkedIn.
+- **Assets:** Includes a profile photo and downloadable resume.
 
-# Screenshot
+## Usage
 
-Here we have project screenshot :
+Render `index.html` with your favorite webserver.
 
-![screenshot-1](screenshot.png)
+### Main Files
+
+- `index.html` – Main HTML structure and content.
+- `style.css` – Custom styles for layout, typography, and responsiveness.
+- `script.js` – Adds interactivity for contact buttons and social links.
+- `assets/Resume.pdf` – Downloadable resume.
+- `assets/_DSC0683.JPG` – Profile photo.
+
+## Contact
+
+- **Email:** miguelghdez@outlook.com
+- **GitHub:** [mghdez](https://github.com/mghdez)
+- **LinkedIn:** [Miguel Gil Hernandez](https://www.linkedin.com/in/miguel-gil-hernandez-15140a222/)
+
+---
+
+© 2025 Miguel Gil Hernandez
+

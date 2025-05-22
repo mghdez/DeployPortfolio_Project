@@ -1,0 +1,153 @@
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Choose the Terraform action to perform"
+        required: true
+        type: choice
+        options:
+          - Apply_ECR
+          - Apply_LightSail
+          - Destroy_ECR
+          - Destroy_LightSail
+          - Destroy_All
+
+
+jobs:
+  Build-Create-ECR-Push:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.action == 'Apply_ECR' }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Setup Terraform
+      run: |
+        if ! command -v terraform &> /dev/null; then
+          echo "Installing Terraform..."
+          curl -fsSL https://releases.hashicorp.com/terraform/1.11.3/terraform_1.11.3_linux_amd64.zip -o terraform.zip
+          unzip -j terraform.zip terraform -d /usr/local/bin/
+          rm -f terraform.zip
+        else
+          echo "Terraform is already installed."
+        fi
+        terraform --version
+
+    - name: Build Docker image
+      run: docker build -t myportfolio-js-app .
+    
+    - name: Terraform Init And Plan ECR
+      run: |
+        terraform init
+        terraform plan -out=tfplan -var 'aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}' -var 'aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+      working-directory: ./terraform/ecr
+    
+    - name: ECR Repository Creation
+      run: terraform apply -auto-approve -var 'aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}' -var 'aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+      working-directory: ./terraform/ecr
+    
+    - name: Push Docker Image to ECR
+      run: |
+        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $(terraform output -raw ecr_repository_url)
+        docker tag myportfolio-js-app:latest $(terraform output -raw ecr_repository_url):latest
+        docker push $(terraform output -raw ecr_repository_url):latest
+      working-directory: ./terraform/ecr
+  
+  Create-LightSail-And-Deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.action == 'Apply_LightSail' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Setup Terraform
+      run: |
+        if ! command -v terraform &> /dev/null; then
+          echo "Installing Terraform..."
+          curl -fsSL https://releases.hashicorp.com/terraform/1.11.3/terraform_1.11.3_linux_amd64.zip -o terraform.zip
+          unzip -j terraform.zip terraform -d /usr/local/bin/
+          rm -f terraform.zip
+        else
+          echo "Terraform is already installed."
+        fi
+        terraform --version
+
+    - name: Terraform Init And Plan LightSail
+      run: |
+        terraform init
+        terraform plan -out=tfplan -var 'aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}' -var 'aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+      working-directory: ./terraform/lightsail_container
+
+    - name: LightSail Service Creation
+      run: terraform apply -auto-approve -var 'aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}' -var 'aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+      working-directory: ./terraform/lightsail_container
+
+  Destroy-Resources:
+    if: ${{ github.event.inputs.action == 'Destroy_ECR' || github.event.inputs.action == 'Destroy_LightSail' || github.event.inputs.action == 'Destroy_All' }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Setup Terraform
+      run: |
+        if ! command -v terraform &> /dev/null; then
+          echo "Installing Terraform..."
+          curl -fsSL https://releases.hashicorp.com/terraform/1.11.3/terraform_1.11.3_linux_amd64.zip -o terraform.zip
+          unzip -j terraform.zip terraform -d /usr/local/bin/
+          rm -f terraform.zip
+        else
+          echo "Terraform is already installed."
+        fi
+        terraform --version
+
+    - name: Terraform ECR Destroy
+      if: ${{ github.event.inputs.action == 'Destroy_ECR' || github.event.inputs.action == 'Destroy_All'}}
+      run: |
+        terraform init
+        REPO_NAME=$(terraform output -raw ecr_repository_name)
+        IMAGE_IDS=$(aws ecr list-images --repository-name $REPO_NAME --query 'imageIds[*]' --output json)
+        
+        if [ "$IMAGE_IDS" != "[]" ]; then
+          aws ecr batch-delete-image \
+            --repository-name $REPO_NAME \
+            --image-ids "$IMAGE_IDS"
+        else
+          echo "No images found in repository $REPO_NAME. Skipping image deletion."
+        fi
+        terraform destroy -auto-approve -var 'aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}' -var 'aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+      working-directory: ./terraform/ecr
+
+    - name: Terraform LightSail Destroy
+      if: ${{ github.event.inputs.action == 'Destroy_LightSail' || github.event.inputs.action == 'Destroy_All'}}
+      run: |
+        terraform init
+        terraform destroy -auto-approve -var 'aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}' -var 'aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+      working-directory: ./terraform/lightsail_container
